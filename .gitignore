@@ -1,0 +1,14 @@
+node_modules/
+release/
+.DS_Store
+*.log
+__pycache__/
+*.py[cod]
+data/
+*.env
+connection.json
+users.json
+sessions.json
+skin.json
+skins/
+wsl/hermes-studio-account.service

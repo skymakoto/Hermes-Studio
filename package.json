@@ -1,0 +1,43 @@
+{
+  "name": "hermes-studio",
+  "version": "0.1.0",
+  "author": "MAKOTO",
+  "private": true,
+  "description": "A local-first desktop coding workspace powered by Hermes Agent.",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "node --test tests/**/*.test.cjs",
+    "smoke": "node tests/api.smoke.cjs",
+    "dist:win": "electron-builder --win nsis --x64",
+    "dist:win:portable": "electron-builder --win portable --x64 --config.win.artifactName='${productName}-${version}-${arch}-portable.${ext}'"
+  },
+  "devDependencies": {
+    "electron": "^40.9.3",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "top.soramakoto.hermesstudio",
+    "productName": "Hermes Studio",
+    "asar": true,
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": ["nsis", "portable"],
+      "artifactName": "${productName}-${version}-${arch}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

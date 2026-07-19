@@ -1,0 +1,4 @@
+{
+  "apiBaseUrl": "http://127.0.0.1:8642",
+  "apiKey": "replace-with-your-local-hermes-api-key"
+}

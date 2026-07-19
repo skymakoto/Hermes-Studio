@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hermes Studio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">H</span><span>Hermes Studio</span></div>
+        <button class="new-task" id="new-task" title="开始新的对话"><span class="button-symbol">＋</span><span>新对话</span><kbd>Ctrl N</kbd></button>
+        <section class="sidebar-section recent-section">
+          <div class="sidebar-section-heading"><p class="eyebrow">历史对话</p><button class="sidebar-icon-button" id="refresh-sessions" title="刷新对话列表">↻</button></div>
+          <div class="conversation-list" id="conversation-list" aria-label="对话列表">
+            <p class="sidebar-empty" id="conversation-empty">正在加载对话…</p>
+          </div>
+        </section>
+        <div class="sidebar-footer">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="connection-status">检查 Hermes…</span>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div class="project-context"><span class="project-path">WSL Hermes</span></div>
+          <div class="topbar-actions">
+            <span class="skin-name" id="skin-name">暖纸</span>
+            <button class="icon-button skin-toggle" id="skin-toggle" title="切换界面皮肤" aria-label="切换界面皮肤">◐</button>
+            <button class="icon-button skin-settings-button" id="skin-settings" title="自定义皮肤" aria-label="自定义皮肤">✦</button>
+            <span class="profile-badge" id="profile-badge">default</span>
+            <button class="icon-button" id="connection-settings" title="WSL Hermes connection settings">⚙</button>
+            <button class="icon-button" id="clear-log" title="Clear activity">⌫</button>
+          </div>
+        </header>
+
+        <section class="conversation" id="conversation">
+          <div class="welcome" id="welcome">
+            <p class="eyebrow">LOCAL CODING WORKSPACE</p>
+            <h1>今天准备做什么？</h1>
+            <p>连接到后台运行的 WSL Hermes。直接描述任务，或在输入框下方导入文件。</p>
+            <div class="prompt-grid">
+              <button class="suggestion" data-prompt="阅读我导入的文件，概括关键内容。"><span>⌘</span> 分析导入文件</button>
+              <button class="suggestion" data-prompt="根据我提供的内容，定位问题并给出可执行方案。"><span>✓</span> 解决问题</button>
+              <button class="suggestion" data-prompt="把我导入的文件转换为清晰的结构化说明。"><span>＋</span> 整理内容</button>
+            </div>
+          </div>
+          <div class="messages" id="messages"></div>
+        </section>
+
+        <section class="activity-panel" id="activity-panel" aria-label="Hermes activity">
+          <div class="activity-heading"><span>活动</span><span class="run-state" id="run-state">空闲</span></div>
+          <div class="approval-card" id="approval-card" hidden aria-live="assertive">
+            <div class="approval-heading"><span class="approval-signal" aria-hidden="true"></span><p class="approval-title">需要你的确认</p><span class="approval-status" id="approval-status">等待选择</span></div>
+            <p class="approval-detail" id="approval-detail"></p>
+            <pre class="approval-command" id="approval-command"></pre>
+            <div class="approval-actions"><button type="button" class="approval-choice deny" data-approval-choice="deny">拒绝</button><button type="button" class="approval-choice" data-approval-choice="once">本次通过</button><button type="button" class="approval-choice" data-approval-choice="session">本会话通过</button><button type="button" class="approval-choice approve-always" data-approval-choice="always">始终通过</button></div>
+          </div>
+          <pre id="activity-log">Hermes Studio 已就绪。直接描述任务或导入文件。</pre>
+        </section>
+
+        <footer class="composer-wrap">
+          <div class="composer">
+            <textarea id="prompt" rows="1" placeholder="描述要让 Hermes 完成的任务…"></textarea>
+            <div class="attachment-list" id="attachment-list" hidden></div>
+            <div class="composer-bar">
+              <button class="attach-button" id="import-files" title="导入文件">＋ <span>导入文件</span></button>
+              <span class="hint">Enter 发送 · Shift + Enter 换行</span>
+              <label class="model-picker" title="选择本次对话使用的模型"><span>模型</span><select id="model-select" aria-label="选择模型"><optgroup label="GPT"><option value="gpt-5.4">GPT-5.4</option><option value="gpt-5.5">GPT-5.5</option><option value="gpt-5.6-terra" selected>GPT-5.6 Terra</option><option value="gpt-5.6-sol">GPT-5.6 Sol</option><option value="gpt-5.6-luna">GPT-5.6 Luna</option></optgroup><optgroup label="DeepSeek"><option value="deepseek-v4-pro">DeepSeek V4 Pro</option><option value="deepseek-v4-flash">DeepSeek V4 Flash</option></optgroup></select></label>
+              <button class="stop-button" id="stop-task" title="Stop running task" disabled>■</button>
+              <button class="send-button" id="send-task" title="Send task">↑</button>
+            </div>
+          </div>
+        </footer>
+      </section>
+    </main>
+    <dialog id="connection-dialog" class="connection-dialog">
+      <form id="account-form">
+        <div class="dialog-heading"><div><p class="eyebrow">HERMES STUDIO</p><h2 id="account-title">连接账号</h2></div><button type="button" class="icon-button" id="cancel-account" title="关闭">×</button></div>
+        <label>账户服务地址<input id="account-base-url" type="url" placeholder="http://localhost:8650" required /></label>
+        <label>账号<input id="account-username" autocomplete="username" placeholder="输入账号名" required /></label>
+        <label>密码<input id="account-password" type="password" autocomplete="current-password" placeholder="输入密码" required /></label>
+        <label id="setup-code-row" hidden>管理员配对码<input id="setup-code" type="password" placeholder="仅创建新账号时需要" /></label>
+        <p class="dialog-note" id="account-note">连接令牌受 Windows 凭据保护。Hermes API Key 永远不会发送到此应用。</p>
+        <p class="account-error" id="account-error" role="alert" hidden></p>
+        <div class="dialog-actions"><button type="button" class="secondary-button" id="cancel-account-action">取消</button><button type="button" class="secondary-button" id="show-register">创建账号</button><button type="submit" class="primary-button" id="submit-account">连接</button></div>
+      </form>
+      <div class="account-signed-in" id="account-signed-in" hidden>
+        <div class="dialog-heading"><div><p class="eyebrow">HERMES STUDIO</p><h2>已连接账号</h2></div><button class="icon-button" id="close-account" title="关闭">×</button></div>
+        <p class="signed-in-name" id="signed-in-name"></p>
+        <p class="dialog-note">此设备使用 Windows 凭据保护账号令牌。断开后需要重新输入账号和密码。</p>
+        <div class="dialog-actions"><button class="secondary-button" id="switch-account">切换账号</button><button class="primary-button" id="logout-account">断开连接</button></div>
+      </div>
+    </dialog>
+    <div class="session-menu" id="session-menu" role="menu" hidden>
+      <button type="button" class="session-menu-delete" id="delete-session" role="menuitem">删除对话</button>
+    </div>
+    <dialog class="skin-dialog" id="skin-dialog">
+      <form id="skin-form">
+        <div class="dialog-heading"><div><p class="eyebrow">PERSONAL APPEARANCE</p><h2>自定义皮肤</h2></div><button type="button" class="icon-button" id="close-skin" title="关闭">×</button></div>
+        <p class="skin-dialog-note">导入资源会复制到 Hermes Studio 本地目录；原始文件可随时移动或删除。</p>
+        <div class="skin-editor-toolbar"><label class="skin-name-field">方案名称<input id="skin-name-input" maxlength="48" placeholder="我的皮肤" /></label><button type="button" class="secondary-button" id="import-skin">导入</button><button type="button" class="secondary-button" id="export-skin">导出</button></div>
+        <div class="skin-editor-tabs" role="tablist"><button type="button" class="skin-editor-tab active" data-skin-panel="global">整体背景</button><button type="button" class="skin-editor-tab" data-skin-panel="sidebar">会话列表</button><button type="button" class="skin-editor-tab" data-skin-panel="composer">聊天框</button></div>
+        <section class="skin-editor-panel" data-skin-panel-content="global">
+          <div class="skin-asset-row"><div><strong>背景图片</strong><span id="skin-background-name">未选择</span></div><button type="button" class="secondary-button" id="choose-skin-background">选择图片</button></div>
+          <div class="skin-asset-row"><div><strong>界面字体</strong><span id="skin-font-name">系统默认字体</span></div><button type="button" class="secondary-button" id="choose-skin-font">选择字体</button></div>
+        <div class="skin-controls">
+          <label>文字颜色<input type="color" id="skin-text-color" value="#302d2a" /></label>
+          <label>整体字号 <output id="skin-text-scale-value">100%</output><input type="range" id="skin-text-scale" min="80" max="160" value="100" /></label>
+          <label>强调颜色<input type="color" id="skin-accent-color" value="#d66b52" /></label>
+          <label class="skin-opacity">背景遮罩 <output id="skin-opacity-value">72%</output><input type="range" id="skin-opacity" min="0" max="100" value="72" /></label>
+          <label class="skin-position">横向位置 <output id="skin-position-x-value">50%</output><input type="range" id="skin-position-x" min="0" max="100" value="50" /></label>
+          <label class="skin-position">纵向位置 <output id="skin-position-y-value">50%</output><input type="range" id="skin-position-y" min="0" max="100" value="50" /></label>
+          <label>图片适配<select id="skin-background-fit"><option value="cover">覆盖</option><option value="contain">完整显示</option><option value="tile">平铺</option></select></label>
+          <label>缩放比例 <output id="skin-background-scale-value">100%</output><input type="range" id="skin-background-scale" min="50" max="200" value="100" /></label>
+          <label>遮罩颜色<input type="color" id="skin-background-overlay-color" value="#ffffff" /></label>
+          <label>圆角 <output id="skin-background-radius-value">0px</output><input type="range" id="skin-background-radius" min="0" max="32" value="0" /></label>
+          <label>边框颜色<input type="color" id="skin-background-border-color" value="#ffffff" /></label>
+          <label>边框透明度 <output id="skin-background-border-opacity-value">0%</output><input type="range" id="skin-background-border-opacity" min="0" max="100" value="0" /></label>
+          <label>模糊 <output id="skin-background-blur-value">0px</output><input type="range" id="skin-background-blur" min="0" max="28" value="0" /></label>
+          <label>阴影 <output id="skin-background-shadow-value">0px</output><input type="range" id="skin-background-shadow" min="0" max="50" value="0" /></label>
+        </div>
+        </section>
+        <section class="skin-editor-panel" data-skin-panel-content="sidebar" hidden>
+          <div class="skin-asset-row"><div><strong>会话栏图片</strong><span id="skin-sidebar-name">使用默认表面</span></div><button type="button" class="secondary-button" id="choose-skin-sidebar">选择图片</button></div>
+          <div class="skin-controls skin-controls-inline"><label>会话栏颜色<input type="color" id="skin-sidebar-color" value="#f8f3eb" /></label><label>文字颜色<input type="color" id="skin-sidebar-text-color" value="#302d2a" /></label><label>字号 <output id="skin-sidebar-text-scale-value">100%</output><input type="range" id="skin-sidebar-text-scale" min="80" max="160" value="100" /></label><label>图片遮罩 <output id="skin-sidebar-opacity-value">92%</output><input type="range" id="skin-sidebar-opacity" min="0" max="100" value="92" /></label><label>横向位置 <output id="skin-sidebar-position-x-value">50%</output><input type="range" id="skin-sidebar-position-x" min="0" max="100" value="50" /></label><label>纵向位置 <output id="skin-sidebar-position-y-value">50%</output><input type="range" id="skin-sidebar-position-y" min="0" max="100" value="50" /></label><label>图片适配<select id="skin-sidebar-fit"><option value="cover">覆盖</option><option value="contain">完整显示</option><option value="tile">平铺</option></select></label><label>遮罩颜色<input type="color" id="skin-sidebar-overlay-color" value="#ffffff" /></label><label>圆角 <output id="skin-sidebar-radius-value">0px</output><input type="range" id="skin-sidebar-radius" min="0" max="32" value="0" /></label><label>边框颜色<input type="color" id="skin-sidebar-border-color" value="#ffffff" /></label><label>边框透明度 <output id="skin-sidebar-border-opacity-value">0%</output><input type="range" id="skin-sidebar-border-opacity" min="0" max="100" value="0" /></label><label>模糊 <output id="skin-sidebar-blur-value">10px</output><input type="range" id="skin-sidebar-blur" min="0" max="28" value="10" /></label><label>阴影 <output id="skin-sidebar-shadow-value">0px</output><input type="range" id="skin-sidebar-shadow" min="0" max="50" value="0" /></label></div>
+        </section>
+        <section class="skin-editor-panel" data-skin-panel-content="composer" hidden>
+          <div class="skin-asset-row"><div><strong>聊天框图片</strong><span id="skin-composer-name">使用默认表面</span></div><button type="button" class="secondary-button" id="choose-skin-composer">选择图片</button></div>
+          <div class="skin-controls skin-controls-inline"><label>聊天框颜色<input type="color" id="skin-composer-color" value="#fffaf2" /></label><label>文字颜色<input type="color" id="skin-composer-text-color" value="#302d2a" /></label><label>字号 <output id="skin-composer-text-scale-value">100%</output><input type="range" id="skin-composer-text-scale" min="80" max="160" value="100" /></label><label>图片遮罩 <output id="skin-composer-opacity-value">90%</output><input type="range" id="skin-composer-opacity" min="0" max="100" value="90" /></label><label>横向位置 <output id="skin-composer-position-x-value">50%</output><input type="range" id="skin-composer-position-x" min="0" max="100" value="50" /></label><label>纵向位置 <output id="skin-composer-position-y-value">50%</output><input type="range" id="skin-composer-position-y" min="0" max="100" value="50" /></label><label>图片适配<select id="skin-composer-fit"><option value="cover">覆盖</option><option value="contain">完整显示</option><option value="tile">平铺</option></select></label><label>遮罩颜色<input type="color" id="skin-composer-overlay-color" value="#ffffff" /></label><label>圆角 <output id="skin-composer-radius-value">8px</output><input type="range" id="skin-composer-radius" min="0" max="32" value="8" /></label><label>边框颜色<input type="color" id="skin-composer-border-color" value="#ffffff" /></label><label>边框透明度 <output id="skin-composer-border-opacity-value">0%</output><input type="range" id="skin-composer-border-opacity" min="0" max="100" value="0" /></label><label>模糊 <output id="skin-composer-blur-value">8px</output><input type="range" id="skin-composer-blur" min="0" max="28" value="8" /></label><label>阴影 <output id="skin-composer-shadow-value">18px</output><input type="range" id="skin-composer-shadow" min="0" max="50" value="18" /></label></div>
+        </section>
+        <div class="skin-preview" id="skin-preview"><span>你的工作台</span><strong>让界面贴近你的习惯</strong><small>实时预览将在保存后持续生效</small></div>
+        <div class="dialog-actions"><button type="button" class="secondary-button" id="reset-skin">重置自定义</button><button type="button" class="secondary-button" id="cancel-skin">取消</button><button type="submit" class="primary-button">保存皮肤</button></div>
+      </form>
+    </dialog>
+    <script src="app.js"></script>
+  </body>
+</html>
