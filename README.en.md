@@ -97,6 +97,51 @@ Verify the gateway:
 curl http://127.0.0.1:8650/health
 ```
 
+### Keep WSL Alive After Closing Ubuntu
+
+`systemd --user` linger keeps user services alive only while the WSL instance itself is running. It does not prevent Windows from reclaiming the whole WSL VM after its last WSL client exits. If Studio becomes unavailable after closing the Ubuntu window, retain a Windows-side reference to the Ubuntu instance as well.
+
+#### Confirmed Incident Review
+
+The observed symptom was that, after the last Ubuntu/CLI window closed, Studio login reported `TypeError: fetch failed` or that it could not connect to the Studio service; it recovered after WSL was started again. During investigation, `hermes-gateway.service`, `hermes-studio-account.service`, ports `8642`/`8650`, the authenticated account-gateway-to-Hermes-API health request, and Windows access to `localhost:8650` were all healthy. The root cause was therefore not the Studio gateway URL, account service, or Hermes Gateway configuration. Windows had reclaimed the WSL instance after its final WSL client exited, so the local services were no longer running.
+
+Closing an extra WSL child process is not a valid test while the original Ubuntu/CLI window remains open: the WSL instance has not entered the real "last client exited" state. The acceptance test is to close the final Ubuntu window, then verify the health endpoint from Windows and confirm that the Windows-side keepalive `wsl.exe` process still exists.
+
+1. Confirm `/etc/wsl.conf` contains:
+
+```ini
+[boot]
+systemd=true
+```
+
+2. In WSL, enable the services and user linger:
+
+```bash
+loginctl enable-linger "$USER"
+systemctl --user enable --now hermes-gateway.service hermes-studio-account.service
+```
+
+An optional in-guest keepalive unit may also be enabled if you have created one, but it is not a replacement for the Windows-side process in the next step.
+
+3. Start this hidden, long-running command through a Windows sign-in startup item or Scheduled Task. Do not replace it with a one-shot `systemctl start` command:
+
+```powershell
+wsl.exe -d Ubuntu -u makoto --exec /usr/bin/sleep infinity
+```
+
+Replace `Ubuntu` and `makoto` with the actual distribution and WSL user. The Windows-side process prevents WSL from exiting after its last Ubuntu window closes; an in-guest `sleep infinity` process is not a replacement for it.
+
+After closing the terminal, verify from Windows:
+
+```powershell
+curl.exe http://localhost:8650/health
+Get-CimInstance Win32_Process | Where-Object {
+  $_.Name -eq 'wsl.exe' -and $_.CommandLine -match '/usr/bin/sleep infinity'
+} | Select-Object Name, ProcessId, CommandLine
+```
+
+The health endpoint must return `{"status":"ok","service":"hermes-studio-account-gateway"}`. Do not run `wsl --shutdown` or end the `wsl.exe ... sleep infinity` process; either action stops the Studio services.
+
 ## Local Development
 
 ```bash

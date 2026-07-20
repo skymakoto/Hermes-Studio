@@ -97,6 +97,51 @@ systemctl --user status hermes-studio-account.service
 curl http://127.0.0.1:8650/health
 ```
 
+### WSL 常驻运行（关闭 Ubuntu 终端后仍可用）
+
+`systemd --user` 的 `linger` 只能使用户服务在 WSL 仍运行时脱离终端存活；它不会阻止 Windows 在最后一个 WSL 客户端退出后回收整个 WSL 虚拟机。若 Studio 在关闭 Ubuntu 窗口后无法连接，必须同时保活 Windows 侧的 Ubuntu 实例。
+
+#### 已确认的问题复盘
+
+曾出现的现象是：关闭最后一个 Ubuntu/CLI 窗口后，Studio 登录报 `TypeError: fetch failed` 或提示无法连接 Studio 服务；重新唤醒 WSL 后恢复。排查时，`hermes-gateway.service`、`hermes-studio-account.service`、端口 `8642`/`8650`、账户网关到 Hermes API 的认证健康请求，以及 Windows 对 `localhost:8650` 的访问均正常。因此根因不是 Studio 网关地址、账户服务或 Hermes Gateway 配置，而是最后一个 WSL 客户端退出后 Windows 回收了 WSL 实例，使本地服务不再运行。
+
+不要把关闭一个额外启动的 WSL 子进程当作有效验证：只要原 Ubuntu/CLI 窗口仍开着，WSL 实例并未进入真实的“最后一个客户端退出”状态。有效验收是关闭最后一个 Ubuntu 窗口后，从 Windows 检查健康接口仍可访问，并确认 Windows 侧保活 `wsl.exe` 进程仍存在。
+
+1. 确认 `/etc/wsl.conf` 包含：
+
+```ini
+[boot]
+systemd=true
+```
+
+2. 在 WSL 中启用服务与用户 linger：
+
+```bash
+loginctl enable-linger "$USER"
+systemctl --user enable --now hermes-gateway.service hermes-studio-account.service
+```
+
+若已自行创建 guest 保活单元，也可以启用它；但它不能替代下一步的 Windows 侧保活进程。
+
+3. 在 Windows 登录启动项或计划任务中启动一个隐藏的宿主保活进程。命令必须持续运行，不能只执行一次 `systemctl start`：
+
+```powershell
+wsl.exe -d Ubuntu -u makoto --exec /usr/bin/sleep infinity
+```
+
+将 `Ubuntu` 和 `makoto` 替换为实际发行版和 WSL 用户。Windows 侧进程才是防止 WSL 因关闭最后一个 Ubuntu 窗口而退出的关键；WSL 内的 `sleep infinity` 不能单独替代它。
+
+关闭终端后从 Windows 验证：
+
+```powershell
+curl.exe http://localhost:8650/health
+Get-CimInstance Win32_Process | Where-Object {
+  $_.Name -eq 'wsl.exe' -and $_.CommandLine -match '/usr/bin/sleep infinity'
+} | Select-Object Name, ProcessId, CommandLine
+```
+
+预期健康检查返回 `{"status":"ok","service":"hermes-studio-account-gateway"}`。不要执行 `wsl --shutdown`，也不要结束上述 `wsl.exe ... sleep infinity` 进程；两者都会停止 Studio 服务。
+
 ## 本地开发
 
 ```bash

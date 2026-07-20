@@ -1,6 +1,6 @@
 {
   "name": "hermes-studio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "MAKOTO",
   "private": true,
   "description": "A local-first desktop coding workspace powered by Hermes Agent.",

@@ -723,8 +723,8 @@ $('#account-form').addEventListener('submit', async (event) => {
   };
   try {
     showAccountError();
-    if (state.registerMode) await window.studio.register(input);
-    else await window.studio.login(input);
+    const result = state.registerMode ? await window.studio.register(input) : await window.studio.login(input);
+    if (!result?.ok) throw new Error(result?.error || '账号连接失败，请检查地址、账号和密码。');
     closeAccountDialog();
     await refreshStatus();
   } catch (error) {

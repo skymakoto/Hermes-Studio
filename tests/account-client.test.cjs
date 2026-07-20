@@ -79,6 +79,10 @@ test('Studio exposes real Hermes session history controls', () => {
   assert.match(main, /studio:get-session-messages/);
   assert.match(main, /无法连接 Hermes Studio 服务/);
   assert.match(main, /AbortSignal\.timeout\(5000\)/);
+  assert.match(main, /async function accountLogin[\s\S]*?for \(let attempt = 0; attempt < 2/);
+  assert.match(main, /ipcMain\.handle\('studio:login', async \(_event, input\) => \{/);
+  assert.match(main, /return \{ ok: false, error: accountServiceError\(error\)\.message \};/);
+  assert.match(rendererScript, /if \(!result\?\.ok\) throw new Error/);
   assert.match(main, /return \{ ok: false, error: accountServiceError\(error\)\.message \}/);
   assert.match(main, /studio:select-session/);
   assert.match(main, /newSessionTitle\(\)/);

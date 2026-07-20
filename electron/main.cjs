@@ -241,11 +241,23 @@ async function accountLogin(input) {
   const password = String(input?.password || '');
   if (!/^https?:\/\//.test(accountBaseUrl)) throw new Error('账户服务地址必须以 http:// 或 https:// 开头。');
   if (!username || !password) throw new Error('请输入账号和密码。');
-  const response = await fetch(`${accountBaseUrl}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
+  let response;
+  let failure;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      response = await fetch(`${accountBaseUrl}/auth/login`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(5000),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      break;
+    } catch (error) {
+      failure = error;
+      if (attempt === 0) await wait(300);
+    }
+  }
+  if (!response) throw accountServiceError(failure);
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || `登录失败 (${response.status})。`);
   return saveAccount({ accountBaseUrl, username: payload.username, token: payload.token });
@@ -463,8 +475,20 @@ ipcMain.handle('studio:account', () => {
   return { accountBaseUrl: connection.accountBaseUrl, username: connection.username, configured: Boolean(connection.token) };
 });
 
-ipcMain.handle('studio:login', (_event, input) => accountLogin(input));
-ipcMain.handle('studio:register', (_event, input) => accountRegister(input));
+ipcMain.handle('studio:login', async (_event, input) => {
+  try {
+    return { ok: true, account: await accountLogin(input) };
+  } catch (error) {
+    return { ok: false, error: accountServiceError(error).message };
+  }
+});
+ipcMain.handle('studio:register', async (_event, input) => {
+  try {
+    return { ok: true, account: await accountRegister(input) };
+  } catch (error) {
+    return { ok: false, error: accountServiceError(error).message };
+  }
+});
 ipcMain.handle('studio:logout', async () => {
   const connection = readConnection();
   if (connection.token) {

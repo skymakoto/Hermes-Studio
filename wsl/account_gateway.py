@@ -199,9 +199,13 @@ class AccountGateway:
             response_headers = {key: value for key, value in upstream.headers.items() if key.lower() in {"content-type", "cache-control", "x-accel-buffering", "x-hermes-session-id"}}
             response = web.StreamResponse(status=upstream.status, headers=response_headers)
             await response.prepare(request)
-            async for chunk in upstream.content.iter_chunked(8192):
-                await response.write(chunk)
-            await response.write_eof()
+            try:
+                async for chunk in upstream.content.iter_chunked(8192):
+                    await response.write(chunk)
+                await response.write_eof()
+            except (BrokenPipeError, ConnectionResetError):
+                # Closing Studio aborts its SSE request; the Hermes run is independent.
+                pass
             return response
 
 
